@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Define the target domain
+domain=$1
+
+# Use subfinder to find subdomains
+subfinder -d $domain > subdomains.txt
+
+# Use dirsearch to find directories on the subdomains
+while read sub; do
+    dirsearch -u $sub -e * > $sub-dirsearch.txt
+done < subdomains.txt
+
+# Use MassDNS to resolve subdomains to IP addresses
+massdns -r lists/resolvers.txt -t A -o S -w massdns-output.txt subdomains.txt
+
+# Use sublist3r to find subdomains
+sublist3r -d $domain -o sublist3r-output.txt
+
+# Use ffuf to find hidden files and directories
+while read sub; do
+    ffuf -u $sub/FUZZ -w lists/common.txt -t 100 -o ffuf-output.txt
+done < subdomains.txt
+
+# Use Waybackurls to find historic URLs
+waybackurls $domain > waybackurls-output.txt
+
+# Use nmap to scan for open ports and services
+nmap -iL massdns-output.txt -oA nmap-output
+
+# Use vulners to find vulnerabilities
+nmap --script vulners -iL massdns-output.txt -oA vulners-output
+
+# Use gitjs to find sensitive information in JavaScript files
+gitjs -d $domain > gitjs-output.txt
+
+# Use getallurls to find all URLs on a domain
+getallurls $domain > getallurls-output.txt
+
+# Use xsshunter to find cross-site scripting vulnerabilities
+xsshunter $domain > xsshunter-output.txt
+
+# Use swlmap to find server-side request forgery vulnerabilities
+swlmap $domain > swlmap-output.txt
+
+# Use xxeinjector to find XML external entity vulnerabilities
+xxeinjector $domain > xxeinjector-output.txt
+
+# Use ssrfdetector to find server-side request forgery vulnerabilities
+ssrfdetector $domain > ssrfdetector-output.txt
+
+# Use gittools to find sensitive information in git repositories
+gittools $domain > gittools-output.txt
+
+# Use gitallsecrets to find sensitive information in git repositories
+gitallsecrets $domain > gitallsecrets-output.txt
+
+# Use corstest to check for CORS misconfigurations
+corstest $domain > corstest-output.txt
+
+# Use eyewitness to take screenshots of web pages
+while read sub; do
+    eyewitness --web -u $sub -d $sub-eyewitness
+done < subdomains.txt
+
+# Use parameth to find parameters in web pages
+while read sub; do
+    parameth -u $sub -d $sub-parameth
+done < subdomains.txt
